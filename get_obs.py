@@ -18,10 +18,8 @@ import shutil
 from pathlib import Path
 import yaml as ym
 
-conv_path = Path('$HOME/ioda-bundle/build/bin/')
-
 class obs_win(object):
-    def __init__(self, sta, end, win, pfm, ins, obv, pio, cln):
+    def __init__(self, sta, end, win, pfm, ins, obv, pio, pbd, cln):
         self.sta = sta
         self.end = end
         self.win = win
@@ -29,6 +27,9 @@ class obs_win(object):
         self.ins = ins
         self.obv = obv
         self.pio = pio
+        self.pbd = pbd
+        version = sys.version.split('.')[0]+'.'+sys.version.split('.')[1]
+        os.environ["PYTHONPATH"] = self.pbd+'/lib/python'+version+'/pyioda/ioda/../:/usr/local/lib'
         self.cln = cln
         self.tmpdir = Path(__file__).parent/str('tmp_'+self.pfm+'_'+self.ins+'_'+self.obv)
         self.get_win_range()
@@ -62,7 +63,7 @@ class obs_win(object):
         hdrp = ' --header "Authorization: Bearer ' +tok+'" '
         url = 'https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/61/'
         cmd = 'wget -e robots=off -m -nv -np --reject html,tmp -nH --cut-dirs=6 -A '
-        exe = conv_path/'modis_aod2ioda.py '
+        exe = Path(self.pbd)/'bin'/'modis_aod2ioda.py '
         for w_s,w_e in zip(self.lwin_s,self.lwin_e):
             finish = False
             if w_s == self.lwin_s[-1]: finish = True 
@@ -116,10 +117,13 @@ def main():
     ins = ymlist["instrument"]
     obv = ymlist["observable"] 
 
-    pio = ymlist["path ioda"]
+    pio = ymlist["path ioda out"]
+    pbd = ymlist["path build"]
+
     cln = ymlist["clean"]
 
-    owclass = obs_win(sta, end, win, pfm, ins, obv, pio, cln)
+
+    owclass = obs_win(sta, end, win, pfm, ins, obv, pio, pbd, cln)
 
     
 

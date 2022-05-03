@@ -4,5 +4,6 @@ window length: PT6H
 platform: Aqua
 instrument: MODIS
 observable: AOD
-path ioda: ioda_modis_aod
+path build: $HOME/ioda-bundle/build/
+path ioda out: ioda_modis_aod
 clean: True # if set to False this will clutter your diskspace 
