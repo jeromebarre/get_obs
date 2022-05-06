@@ -1,0 +1,10 @@
+start date: 2021-08-01T21:00:00Z #it's window begin time, not window center
+end date: 2021-08-02T09:00:00Z
+window length: PT6H
+platform: NPP
+instrument: VIIRS
+observable: AOD
+path build: /home/vagrant/ioda-bundle/build/
+path ioda out: ioda_viirs_aod
+clean: True # if set to False this will clutter your diskspace
+cache: True
