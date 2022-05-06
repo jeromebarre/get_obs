@@ -98,7 +98,7 @@ class obs_win(object):
                 fcmd = cmd + fnam + ftp + locf
                 os.system(fcmd)
                 w_c = w_c + Timedelta(hours=1)
-            os.system('cat *.tar | tar -xvf - -i')
+            os.system('cat '+str(self.tmpdir)+'/*.tar | tar -xvf - -i -C '+str(self.tmpdir)+'/')
             w_m = w_s + self.win//2
             ymdh_m = w_m.strftime("%Y%m%d%H")
             fout = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'.nc'
