@@ -96,8 +96,7 @@ class obs_win(object):
                 locf = ' -P '+str(self.tmpdir)
 
                 fcmd = cmd + fnam + ftp + locf
-                print(fcmd)
-                #os.system(fcmd)
+                os.system(fcmd)
                 w_c = w_c + Timedelta(hours=1)
             os.system('cat *.tar | tar -xvf - -i')
             w_m = w_s + self.win//2
