@@ -1,5 +1,5 @@
 start date: 2021-08-01T03:00:00Z #it's window begin time, not window center
-end date: 2021-08-07T09:00:00Z
+end date: 2021-08-08T03:00:00Z
 window length: PT6H
 platform: NOAA-20
 instrument: VIIRS

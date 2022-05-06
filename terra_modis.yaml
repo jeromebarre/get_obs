@@ -4,7 +4,7 @@ window length: PT6H
 platform: Terra
 instrument: MODIS
 observable: AOD
-path build: $HOME/ioda-bundle/build/
+path build: /home/vagrant/ioda-bundle/build/
 path ioda out: ioda_modis_aod
 clean: True # if set to False this will clutter your diskspace
 cache: True
