@@ -102,9 +102,8 @@ class obs_win(object):
             w_m = w_s + self.win//2
             ymdh_m = w_m.strftime("%Y%m%d%H")
             fout = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'.nc'
-            #thining set to 0.1 (10%) for space and speed
-            os.system(str(exe)+'-i '+str(self.tmpdir)+'/*.nc -n 0.1 -m nesdis -k maskout -o '+fout)
-
+            #thining set to 0.9 (10%) for space and speed
+            os.system(str(exe)+'-i '+str(self.tmpdir)+'/*.nc -n 0.9 -m nesdis -k maskout -o '+fout)
 
 
     def getnconv_modis(self):
