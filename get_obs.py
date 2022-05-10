@@ -63,7 +63,7 @@ class obs_win(object):
         ordr_f = Path(__file__).parent/'order_file'
         if not os.path.isfile(ordr_f) or not self.cch:
             order = input("Enter order numbers provided by CLASS order"+ \
-                    +"(next to the cd command on the order email):")
+                    "(next to the cd command on the order email):")
             with open(ordr_f, 'w') as f: f.write(order)
         else:
             with open(ordr_f, 'r') as f: order = f.read()
