@@ -124,7 +124,7 @@ class obs_win(object):
 
         hdrp = ' --header "Authorization: Bearer ' +tok+'" '
         url = 'https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/61/'
-        cmd = 'wget -e robots=off -m -nc -nv -np --reject html,tmp -nH --cut-dirs=6 -A '
+        cmd = 'wget -e robots=off -r -nc -nd -np -nv -A '
         exe = Path(self.pbd)/'bin'/'modis_aod2ioda.py '
         for w_s,w_e in zip(self.lwin_s,self.lwin_e):
             finish = False
@@ -135,7 +135,7 @@ class obs_win(object):
                 doy, yr, hr, mn = str(w_c.timetuple().tm_yday), w_c.strftime('%Y'), \
                         w_c.strftime('%H'), w_c.strftime('%M')
                 furl = ' '+url+pref+'/'+yr+'/'+doy+'/ '
-                fnam = ' "'+pref+'.A'+yr+doy+'.'+hr+mn+'.061.*.hdf" '
+                fnam = ' "'+pref+'.A'+yr+doy+'.'+hr+mn+'.061.*" '
                 locf = ' -P '+str(self.tmpdir) #+'/'+pref+'.A'+yr+doy+'.'+hr+mn+'.hdf '
                 hdrp = ' --header "Authorization: Bearer ' +tok+'" '
                 
