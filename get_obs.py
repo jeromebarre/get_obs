@@ -36,7 +36,7 @@ class obs_win(object):
         self.get_win_range()
         if self.ins == 'MODIS': self.getnconv_modis()
         if self.ins == 'VIIRS': self.getnconv_viirs()
-        
+        if self.ins == 'TROPOMI': self.getnconv_tropomi() 
 
     def get_win_range(self):
         self.lwin_s = date_range(start=self.sta, end=self.end, freq=self.win)
@@ -116,7 +116,7 @@ class obs_win(object):
 
         tokfile = Path(__file__).parent/'eosdis_token'
         if not os.path.isfile(tokfile) or not self.cch:
-            tok = input("Enter token from https://ladsweb.modaps.eosdis.nasa.gov/: ")
+            tok = input("Enter token from https://ladsweb.modaps.eosdis.nasa.gov/: ") 
             with open(tokfile, 'w') as f: f.write(tok)
         else:
             with open(tokfile, 'r') as f: tok = f.read()
@@ -149,13 +149,53 @@ class obs_win(object):
             fout = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh+'.nc'
             os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -t '+ymdh+' -p '+self.pfm+' -o '+fout)
 
+    def getnconv_tropomi(self):
+        import xml.etree.ElementTree as ET
+        '''
+        obs ingest function for TROPOMI products using the s5phub API
+        on https://s5phub.copernicus.eu/
+        '''
+
+        xmlist='list_tropomi.xml'
+        #pass and id are being the same since 2018 and is kind of public, not sure this will change soon
+        wgc = 'wget --user=s5pguest --password=s5pguest --no-check-certificate '
+        apisearch='https://s5phub.copernicus.eu/dhus/search?q='
+        dlurl='https://s5phub.copernicus.eu/dhus/odata/v1/Products'
+        if self.obv=='NO2': prod='L2__NO2___' #other products could be added in the future
+
+        for w_s,w_e in zip(self.lwin_s,self.lwin_e):
+            finish = False
+            if w_s == self.lwin_s[-1]: finish = True
+            self.check_clean(finish)
+            ymdh_s = w_s.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
+            ymdh_e = w_e.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
+            apisearch+='--output-document='+xmlist+' producttype:'+prod+' AND beginposition:[' \
+                        +ymdh_s+' TO '+ymdh_e+']'
+
+            #os.system(wgc+' "'+apisearch+'"')
+
+            #get the uuids from the xml
+            tree = ET.parse(xmlist)
+            root = tree.getroot()
+            for child1 in root:
+                for child2 in child1:
+                    if 'name' in child2.attrib and child2.attrib['name'] == 'uuid':
+                       uuid = child2.text
+                       durl=dlurl+"('"+uuid+"')/\$value"
+                       durl='"'+durl+'"'
+                       print(durl)
+                       os.system('cd '+str(self.tmpdir)+';'+wgc+' --content-disposition '+durl+';cd ..')
+
+                       
+
+            #break
 
 
 def main():
 
     parser = argparse.ArgumentParser(
         description=(
-            'Dowload,make IODA files and clean at DA window times with yaml as input params: -i ')
+            'Download, make IODA files and clean at DA window times with yaml as input params: -i ')
     )
 
     required = parser.add_argument_group(title='required arguments')
