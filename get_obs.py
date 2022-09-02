@@ -176,9 +176,9 @@ class obs_win(object):
             w_ss = w_s + Timedelta(hours=-1)
             ymdh_s = w_ss.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
             ymdh_e = w_e.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
-            apisearch+='producttype:'+prod+' AND beginposition:['+ymdh_s+' TO '+ymdh_e+']'
+            apis = apisearch+'producttype:'+prod+' AND beginposition:['+ymdh_s+' TO '+ymdh_e+']'
 
-            os.system(wgc+'--output-document='+xmlist+' "'+apisearch+'"')
+            os.system(wgc+'--output-document='+xmlist+' "'+apis+'"')
 
             #get the uuids from the xml
             tree = ET.parse(xmlist)
@@ -189,7 +189,6 @@ class obs_win(object):
                        uuid = child2.text
                        durl=dlurl+"('"+uuid+"')/\$value"
                        durl='"'+durl+'"'
-                       print(durl)
                        os.system('cd '+str(self.tmpdir)+';'+wgc+' --content-disposition '+durl+';cd ..')
 
             w_m = w_s + self.win//2
