@@ -161,6 +161,7 @@ class obs_win(object):
         exe = Path(self.pbd)/'bin'/'tropomi_no2_nc2ioda.py '
 
         xmlist='list_tropomi.xml'
+        if os.path.exists(xmlist): os.remove(xmlist)
         #pass and id are being the same since 2018 and is kind of public, not sure this will change soon
         wgc = 'wget --user=s5pguest --password=s5pguest --no-check-certificate '
         apisearch='https://s5phub.copernicus.eu/dhus/search?q='
@@ -175,10 +176,9 @@ class obs_win(object):
             w_ss = w_s + Timedelta(hours=-1)
             ymdh_s = w_ss.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
             ymdh_e = w_e.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
-            apisearch+='--output-document='+xmlist+' producttype:'+prod+' AND beginposition:[' \
-                        +ymdh_s+' TO '+ymdh_e+']'
+            apisearch+='producttype:'+prod+' AND beginposition:['+ymdh_s+' TO '+ymdh_e+']'
 
-            os.system(wgc+' "'+apisearch+'"')
+            os.system(wgc+'--output-document='+xmlist+' "'+apisearch+'"')
 
             #get the uuids from the xml
             tree = ET.parse(xmlist)
