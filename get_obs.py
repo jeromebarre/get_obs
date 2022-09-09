@@ -198,7 +198,47 @@ class obs_win(object):
             os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_total+' -c total -n 0.9 -q 0.99')
             os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_tropo+' -c tropo -n 0.9 -q 0.99')              
 
-            #break
+    def getnconv_mopitt(self):
+        '''
+        obs ingest function for MOPITT Terra product
+        on https:///asdc.larc.nasa.gov/
+        '''
+        # could be passed as arguments
+        ret_type = 'MOP02J'
+        version = '008'
+
+        tokfile = Path(__file__).parent/'earthdata_token'
+        if not os.path.isfile(tokfile) or not self.cch:
+            tok = input("Enter token from https://urs.earthdata.nasa.gov/: ")
+            with open(tokfile, 'w') as f: f.write(tok)
+        else:
+            with open(tokfile, 'r') as f: tok = f.read()
+        f.close()
+
+        hdrp = ' --header "Authorization: Bearer ' +tok+'" '
+        url = 'https://asdc.larc.nasa.gov/data/MOPITT/'+ret_type+'.'+version+'/'
+        cmd = 'wget -e robots=off -r -nc -nd -np -nv -A '
+        exe = Path(self.pbd)/'bin'/'mopitt_co_nc2ioda.py '
+        for w_s,w_e in zip(self.lwin_s,self.lwin_e):
+            finish = False
+            if w_s == self.lwin_s[-1]: finish = True
+            self.check_clean(finish)
+            w_c = w_s
+            wd_c = w_c.replace(hour=0, minute=0, second=0)
+            wd_e = w_e.replace(hour=0, minute=0, second=0)
+            while wd_c <= wd_e:
+                yr, mo, dy = wd_c.strftime('%Y'), wd_c.strftime('%m'), wd_c.strftime('%d')
+                furl = ' '+url+'/'+yr+'.'+mo+'.'+dy+'/'+retype+'-'+yr+mo+dy+'-L2V18.0.3.he5'
+                locf = ' -P '+str(self.tmpdir)
+                hdrp = ' --header "Authorization: Bearer ' +tok+'" '
+                fcmd = cmd + fnam + hdrp + furl + locf
+                os.system(fcmd)
+
+                w_c = w_c + Timedelta(days=1)
+#https://asdc.larc.nasa.gov/data/MOPITT/MOP02J.008/2021.08.01/MOP02J-20210801-L2V18.0.3.he5
+            #ymd_s = w_s.strftime('%Y%m%d')
+            #ymd_e = w_e.strftime('%Y%m%d')
+
 
 
 def main():
