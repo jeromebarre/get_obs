@@ -1,10 +1,10 @@
 start date: 2021-07-31T21:00:00Z #it's window begin time, not window center
-end date: 2021-09-01T03:00:00Z
+end date: 2021-09-11T21:00:00Z
 window length: PT6H
-platform: S5P
-instrument: TROPOMI
-observable: NO2
+platform: Terra
+instrument: MOPITT
+observable: CO
 path build: /discover/nobackup/jbarre/jedidev/ioda-bundle/build/
-path ioda out: ioda_tropomi_no2
+path ioda out: ioda_mopitt_co
 clean: True # if set to False this will clutter your diskspace
 cache: True

@@ -39,6 +39,7 @@ class obs_win(object):
         if self.ins == 'MODIS': self.getnconv_modis()
         if self.ins == 'VIIRS': self.getnconv_viirs()
         if self.ins == 'TROPOMI': self.getnconv_tropomi() 
+        if self.ins == 'MOPITT': self.getnconv_mopitt()
 
     def get_win_range(self):
         self.lwin_s = date_range(start=self.sta, end=self.end, freq=self.win)
@@ -209,7 +210,7 @@ class obs_win(object):
 
         tokfile = Path(__file__).parent/'earthdata_token'
         if not os.path.isfile(tokfile) or not self.cch:
-            tok = input("Enter token from https://urs.earthdata.nasa.gov/: ")
+            tok = input("Enter token from https:///asdc.larc.nasa.gov/: ")
             with open(tokfile, 'w') as f: f.write(tok)
         else:
             with open(tokfile, 'r') as f: tok = f.read()
@@ -228,17 +229,26 @@ class obs_win(object):
             wd_e = w_e.replace(hour=0, minute=0, second=0)
             while wd_c <= wd_e:
                 yr, mo, dy = wd_c.strftime('%Y'), wd_c.strftime('%m'), wd_c.strftime('%d')
-                furl = ' '+url+'/'+yr+'.'+mo+'.'+dy+'/'+retype+'-'+yr+mo+dy+'-L2V18.0.3.he5'
+                furl = ' '+url+'/'+yr+'.'+mo+'.'+dy+'/ '
                 locf = ' -P '+str(self.tmpdir)
                 hdrp = ' --header "Authorization: Bearer ' +tok+'" '
+                fnam = ' "'+ret_type+'-'+yr+mo+dy+'-L2V18.0.3.he5" '
                 fcmd = cmd + fnam + hdrp + furl + locf
+                print(fcmd)
                 os.system(fcmd)
 
-                w_c = w_c + Timedelta(days=1)
-#https://asdc.larc.nasa.gov/data/MOPITT/MOP02J.008/2021.08.01/MOP02J-20210801-L2V18.0.3.he5
-            #ymd_s = w_s.strftime('%Y%m%d')
-            #ymd_e = w_e.strftime('%Y%m%d')
+                wd_c = wd_c + Timedelta(days=1)
 
+            w_m = w_s + self.win//2
+            ymdh = w_m.strftime("%Y%m%d%H")
+            fout = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh+'.nc'
+            ymdh_s = w_s.strftime('%Y%m%d%H')
+            ymdh_e = w_e.strftime('%Y%m%d%H')
+            ymd_s = w_s.strftime('%Y%m%d')
+            ymd_e = w_e.strftime('%Y%m%d')
+            os.system(str(exe)+'-i '+str(self.tmpdir)+'/*'+ymd_s+'* ' \
+                                    +str(self.tmpdir)+'/*'+ymd_e+'* -r ' \
+                                    +ymdh_s+' '+ymdh_e+' -o '+fout)
 
 
 def main():
