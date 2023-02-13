@@ -159,7 +159,7 @@ class obs_win(object):
         on https://s5phub.copernicus.eu/
         '''
 
-        exe = Path(self.pbd)/'bin'/'tropomi_no2_nc2ioda.py '
+        exe = Path(self.pbd)/'bin'/'tropomi_no2_co_nc2ioda.py '
 
         xmlist='list_tropomi.xml'
         if os.path.exists(xmlist): os.remove(xmlist)
@@ -167,7 +167,9 @@ class obs_win(object):
         wgc = 'wget --user=s5pguest --password=s5pguest --no-check-certificate '
         apisearch='https://s5phub.copernicus.eu/dhus/search?q='
         dlurl='https://s5phub.copernicus.eu/dhus/odata/v1/Products'
-        if self.obv=='NO2': prod='L2__NO2___' #other products could be added in the future
+        #other products could be added in the future
+        if self.obv=='NO2': prod='L2__NO2___'; varname='no2'; qcthre='0.99'
+        if self.obv=='CO':  prod='L2__CO____' ; varname='co' ; qcthre='0.5'
 
         for w_s,w_e in zip(self.lwin_s,self.lwin_e):
             finish = False
@@ -195,9 +197,10 @@ class obs_win(object):
             w_m = w_s + self.win//2
             ymdh_m = w_m.strftime('%Y%m%dT%H')
             fout_total = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'_'+self.obv+'_total.nc'
-            fout_tropo = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'_'+self.obv+'_tropo.nc'
-            os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_total+' -c total -n 0.9 -q 0.99')
-            os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_tropo+' -c tropo -n 0.9 -q 0.99')              
+            os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_total+' -v '+varname+' -c total -n 0.9 -q '+qcthre)
+            if self.obv=='NO2':
+               fout_tropo = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'_'+self.obv+'_tropo.nc'
+               os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_tropo+' -v '+varname+' -c tropo -n 0.9 -q '+qcthre)              
 
     def getnconv_mopitt(self):
         '''
