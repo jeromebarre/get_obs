@@ -1,0 +1,10 @@
+start date: 2021-08-01T03:00:00Z #it's window begin time, not window center
+end date: 2021-08-01T09:00:00Z
+window length: PT6H
+platform: S5P
+instrument: TROPOMI
+observable: CO
+path build: /data/users/swei/Builds/jedi-ioda
+path ioda out: /data/users/swei/Dataset/jedi-obs/ioda_tropomi_co_v2
+clean: False # if set to False this will clutter your diskspace
+cache: True
