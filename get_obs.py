@@ -168,8 +168,15 @@ class obs_win(object):
         apisearch='https://s5phub.copernicus.eu/dhus/search?q='
         dlurl='https://s5phub.copernicus.eu/dhus/odata/v1/Products'
         #other products could be added in the future
-        if self.obv=='NO2': prod='L2__NO2___'; varname='no2'; qcthre='0.99'
-        if self.obv=='CO':  prod='L2__CO____' ; varname='co' ; qcthre='0.5'
+        if self.obv=='NO2': 
+            prod='L2__NO2___'; varname='no2'; qcthre='0.99'
+            api_conf = 'producttype:'+prod
+        if self.obv=='CO':
+            mode = 'Reprocessing'
+            prod='L2__CO____'
+            varname='co'
+            qcthre='0.99'
+            api_conf = 'producttype:'+prod+' AND processingmode:'+mode
 
         for w_s,w_e in zip(self.lwin_s,self.lwin_e):
             finish = False
@@ -179,7 +186,7 @@ class obs_win(object):
             w_ss = w_s + Timedelta(hours=-1)
             ymdh_s = w_ss.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
             ymdh_e = w_e.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
-            apis = apisearch+'producttype:'+prod+' AND beginposition:['+ymdh_s+' TO '+ymdh_e+']'
+            apis = apisearch+api_conf+' AND beginposition:['+ymdh_s+' TO '+ymdh_e+']'
 
             os.system(wgc+'--output-document='+xmlist+' "'+apis+'"')
 
