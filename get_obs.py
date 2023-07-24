@@ -12,7 +12,7 @@ import argparse
 import netCDF4 as nc
 import numpy as np
 from datetime import datetime, date #, timedelta
-from pandas import Timedelta, date_range
+from pandas import Timedelta, date_range, DataFrame
 import os
 import shutil
 from pathlib import Path
@@ -40,6 +40,7 @@ class obs_win(object):
         if self.ins == 'VIIRS': self.getnconv_viirs()
         if self.ins == 'TROPOMI': self.getnconv_tropomi() 
         if self.ins == 'MOPITT': self.getnconv_mopitt()
+        if self.ins == 'OPENAQ': self.getnconv_openaq()
 
     def get_win_range(self):
         self.lwin_s = date_range(start=self.sta, end=self.end, freq=self.win)
@@ -260,6 +261,75 @@ class obs_win(object):
                                     +str(self.tmpdir)+'/*'+ymd_e+'* -r ' \
                                     +ymdh_s+' '+ymdh_e+' -o '+fout)
 
+    def getnconv_openaq(self):
+        import requests
+        from collections import defaultdict
+        '''
+        obs ingest function for OpenAQ products using the API
+        on https://api.openaq.org/v2/measurements
+        '''
+
+        exe = Path(self.pbd)/'bin'/'openaq_ascii2ioda.py '
+
+        xmlist='list_openaq.xml'
+        if os.path.exists(xmlist): os.remove(xmlist)
+        #pass and id are being the same since 2018 and is kind of public, not sure this will change soon
+        dlurl='https://api.openaq.org/v2/measurements'
+
+        if self.obv == 'O3':
+            varname = 'o3'
+        if self.obv == 'PM2.5':
+            varname = 'pm2.5'
+
+        for w_s,w_e in zip(self.lwin_s,self.lwin_e):
+            finish = False
+            if w_s == self.lwin_s[-1]: finish = True
+            self.check_clean(finish)
+
+            params = {
+                'date_from':w_s.strftime('%Y-%m-%dT%X'),
+                'date_to':w_e.strftime('%Y-%m-%dT%X'),
+                'limit':'10000',
+                'parameter': varname,
+                'order_by':'datetime',
+                'sensorType':'reference grade',
+                'has_geo':'true',
+                'value_from':"0",
+            }
+            response = requests.get(dlurl,params=params)
+            global_data = response.json()
+       
+            in_dict = defaultdict(list)
+            print('length: %s' % len(global_data['results']))
+            for row in global_data['results']:
+                for key in ['coordinates','date','locationId','location','value','unit']:
+                    if key == 'coordinates':
+                        if row[key] != None:
+                            in_dict['latitude'].append(row[key]['latitude'])
+                            in_dict['longitude'].append(row[key]['longitude'])
+                        else:
+                            break
+                    elif key == 'date':
+                        in_dict[key].append(row[key]['utc'][:19]+'Z')
+                    elif key == 'locationId':
+                        in_dict[key].append(str(row[key]))
+                    else:
+                        in_dict[key].append(row[key])
+
+            df = DataFrame(in_dict)
+            ppm_filter = (df['unit']=='ppm')
+            tmpdf = df.loc[ugm3_filter,:]
+            
+            w_m = w_s + self.win//2
+            ymdh = w_m.strftime("%Y%m%d%H")
+            tmpfout = str(self.tmpdir)+'/'+self.ins+'_'+self.pfm+'_'+ymdh+'.csv'
+            
+            tmpdf.to_csv(tmpfout,sep=',')
+            
+
+            #w_ss = w_s + Timedelta(hours=-1)
+            #ymdh_s = w_ss.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
+            #ymdh_e = w_e.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
 
 def main():
 
