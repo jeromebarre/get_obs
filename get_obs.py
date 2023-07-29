@@ -274,31 +274,49 @@ class obs_win(object):
         xmlist='list_openaq.xml'
         if os.path.exists(xmlist): os.remove(xmlist)
         #pass and id are being the same since 2018 and is kind of public, not sure this will change soon
-        dlurl='https://api.openaq.org/v2/measurements'
+        openaqurl='https://api.openaq.org/v2/measurements'
+#        cgc=curl --request GET
+#      --url 'https://api.openaq.org/v2/measurements?date_from=2023-07-26T00%3A00%3A00&date_to=2023-07-26T01%3A00%3A00&limit=100&has_geo=true&parameter=o3&parameter=temperature&parameter=pressure'      --header 'accept: application/json'
+
+        limit = '100'
+        has_geo = 'true'
+        orderby = 'datetime'
+        sensorType = 'reference grade'
+        value_from = '0'
+        header = {'content-type': 'application/json'}
 
         if self.obv == 'O3':
             varname = 'o3'
         if self.obv == 'PM2.5':
             varname = 'pm2.5'
+        params = 'parameter='+varname+'&parameter=temperature&parameter=pressure'
 
         for w_s,w_e in zip(self.lwin_s,self.lwin_e):
             finish = False
             if w_s == self.lwin_s[-1]: finish = True
             self.check_clean(finish)
+    
+            date_from = w_s.strftime('%Y-%m-%dT%X')
+            date_to = w_e.strftime('%Y-%m-%dT%X')
 
-            params = {
-                'date_from':w_s.strftime('%Y-%m-%dT%X'),
-                'date_to':w_e.strftime('%Y-%m-%dT%X'),
-                'limit':'10000',
-                'parameter': varname,
-                'order_by':'datetime',
-                'sensorType':'reference grade',
-                'has_geo':'true',
-                'value_from':"0",
-            }
-            response = requests.get(dlurl,params=params)
+            dlurl=openaqurl+'?date_from='+date_from+'&date_to='+date_to+'&limit='+limit+'&has_geo'+has_geo+'&orderby'+orderby \
+                  +'&sensorType='+sensorType+'&value_from='+value_from+'&'+params 
+            print(dlurl)
+            #params = {
+            #    'date_from':w_s.strftime('%Y-%m-%dT%X'),
+            #    'date_to':w_e.strftime('%Y-%m-%dT%X'),
+            #    'limit':'10000',
+            #    'parameter': varname,
+            #    'order_by':'datetime',
+            #    'sensorType':'reference grade',
+            #    'has_geo':'true',
+            #    'value_from':"0",
+            #}
+            response = requests.get(dlurl,headers=header)
+            print(response)
             global_data = response.json()
        
+#            print(global_data['results'])
             in_dict = defaultdict(list)
             print('length: %s' % len(global_data['results']))
             for row in global_data['results']:
@@ -318,7 +336,7 @@ class obs_win(object):
 
             df = DataFrame(in_dict)
             ppm_filter = (df['unit']=='ppm')
-            tmpdf = df.loc[ugm3_filter,:]
+            tmpdf = df.loc[ppm_filter,:]
             
             w_m = w_s + self.win//2
             ymdh = w_m.strftime("%Y%m%d%H")
