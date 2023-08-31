@@ -29,7 +29,7 @@ class obs_win(object):
         self.pio = pio
         self.pbd = pbd
         version = sys.version.split('.')[0]+'.'+sys.version.split('.')[1]
-        os.environ["PYTHONPATH"] = self.pbd+'/lib/python'+version+'/pyioda/ioda/../:' \
+        os.environ["PYTHONPATH"] = self.pbd+'/lib/python'+version+':' \
                                    +os.environ["PYTHONPATH"]
         os.system('echo $PYTHONPATH')
         self.cln = cln
@@ -38,7 +38,7 @@ class obs_win(object):
         self.get_win_range()
         if self.ins == 'MODIS': self.getnconv_modis()
         if self.ins == 'VIIRS': self.getnconv_viirs()
-        if self.ins == 'TROPOMI': self.getnconv_tropomi() 
+        if self.ins == 'TROPOMI': self.getnconv_tropomi()
         if self.ins == 'MOPITT': self.getnconv_mopitt()
 
     def get_win_range(self):
@@ -119,7 +119,7 @@ class obs_win(object):
 
         tokfile = Path(__file__).parent/'eosdis_token'
         if not os.path.isfile(tokfile) or not self.cch:
-            tok = input("Enter token from https://ladsweb.modaps.eosdis.nasa.gov/: ") 
+            tok = input("Enter token from https://ladsweb.modaps.eosdis.nasa.gov/: ")
             with open(tokfile, 'w') as f: f.write(tok)
         else:
             with open(tokfile, 'r') as f: tok = f.read()
@@ -131,7 +131,7 @@ class obs_win(object):
         exe = Path(self.pbd)/'bin'/'modis_aod2ioda.py '
         for w_s,w_e in zip(self.lwin_s,self.lwin_e):
             finish = False
-            if w_s == self.lwin_s[-1]: finish = True 
+            if w_s == self.lwin_s[-1]: finish = True
             self.check_clean(finish)
             w_c = w_s
             while w_c < w_e:
@@ -141,7 +141,7 @@ class obs_win(object):
                 fnam = ' "'+pref+'.A'+yr+doy+'.'+hr+mn+'.061.*" '
                 locf = ' -P '+str(self.tmpdir) #+'/'+pref+'.A'+yr+doy+'.'+hr+mn+'.hdf '
                 hdrp = ' --header "Authorization: Bearer ' +tok+'" '
-                
+
                 fcmd = cmd + fnam + hdrp + furl + locf
                 os.system(fcmd)
 
@@ -168,7 +168,7 @@ class obs_win(object):
         apisearch='https://s5phub.copernicus.eu/dhus/search?q='
         dlurl='https://s5phub.copernicus.eu/dhus/odata/v1/Products'
         #other products could be added in the future
-        if self.obv=='NO2': 
+        if self.obv=='NO2':
             prod='L2__NO2___'; varname='no2'; qcthre='0.99'
             api_conf = 'producttype:'+prod
         if self.obv=='CO':
@@ -207,7 +207,7 @@ class obs_win(object):
             os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_total+' -v '+varname+' -c total -n 0.9 -q '+qcthre)
             if self.obv=='NO2':
                fout_tropo = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'_'+self.obv+'_tropo.nc'
-               os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_tropo+' -v '+varname+' -c tropo -n 0.9 -q '+qcthre)              
+               os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_tropo+' -v '+varname+' -c tropo -n 0.9 -q '+qcthre)
 
     def getnconv_mopitt(self):
         '''
@@ -283,7 +283,7 @@ def main():
 
     pfm = ymlist["platform"]
     ins = ymlist["instrument"]
-    obv = ymlist["observable"] 
+    obv = ymlist["observable"]
 
     pio = ymlist["path ioda out"]
     pbd = ymlist["path build"]
@@ -293,7 +293,7 @@ def main():
 
     owclass = obs_win(sta, end, win, pfm, ins, obv, pio, pbd, cln, cch)
 
-    
+
 
 if __name__ == '__main__':
     main()
