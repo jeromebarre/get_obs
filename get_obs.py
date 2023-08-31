@@ -29,7 +29,7 @@ class obs_win(object):
         self.pio = pio
         self.pbd = pbd
         version = sys.version.split('.')[0]+'.'+sys.version.split('.')[1]
-        os.environ["PYTHONPATH"] = self.pbd+'/lib/python'+version+'/pyioda/ioda/../:' \
+        os.environ["PYTHONPATH"] = self.pbd+'/lib/python'+version+':' \
                                    +os.environ["PYTHONPATH"]
         os.system('echo $PYTHONPATH')
         self.cln = cln
@@ -38,8 +38,9 @@ class obs_win(object):
         self.get_win_range()
         if self.ins == 'MODIS': self.getnconv_modis()
         if self.ins == 'VIIRS': self.getnconv_viirs()
-        if self.ins == 'TROPOMI': self.getnconv_tropomi() 
+        if self.ins == 'TROPOMI': self.getnconv_tropomi()
         if self.ins == 'MOPITT': self.getnconv_mopitt()
+        if self.ins == 'TEMPO': self.getnconv_tempo()
 
     def get_win_range(self):
         self.lwin_s = date_range(start=self.sta, end=self.end, freq=self.win)
@@ -119,7 +120,7 @@ class obs_win(object):
 
         tokfile = Path(__file__).parent/'eosdis_token'
         if not os.path.isfile(tokfile) or not self.cch:
-            tok = input("Enter token from https://ladsweb.modaps.eosdis.nasa.gov/: ") 
+            tok = input("Enter token from https://ladsweb.modaps.eosdis.nasa.gov/: ")
             with open(tokfile, 'w') as f: f.write(tok)
         else:
             with open(tokfile, 'r') as f: tok = f.read()
@@ -131,7 +132,7 @@ class obs_win(object):
         exe = Path(self.pbd)/'bin'/'modis_aod2ioda.py '
         for w_s,w_e in zip(self.lwin_s,self.lwin_e):
             finish = False
-            if w_s == self.lwin_s[-1]: finish = True 
+            if w_s == self.lwin_s[-1]: finish = True
             self.check_clean(finish)
             w_c = w_s
             while w_c < w_e:
@@ -141,7 +142,7 @@ class obs_win(object):
                 fnam = ' "'+pref+'.A'+yr+doy+'.'+hr+mn+'.061.*" '
                 locf = ' -P '+str(self.tmpdir) #+'/'+pref+'.A'+yr+doy+'.'+hr+mn+'.hdf '
                 hdrp = ' --header "Authorization: Bearer ' +tok+'" '
-                
+
                 fcmd = cmd + fnam + hdrp + furl + locf
                 os.system(fcmd)
 
@@ -168,7 +169,7 @@ class obs_win(object):
         apisearch='https://s5phub.copernicus.eu/dhus/search?q='
         dlurl='https://s5phub.copernicus.eu/dhus/odata/v1/Products'
         #other products could be added in the future
-        if self.obv=='NO2': 
+        if self.obv=='NO2':
             prod='L2__NO2___'; varname='no2'; qcthre='0.99'
             api_conf = 'producttype:'+prod
         if self.obv=='CO':
@@ -207,7 +208,7 @@ class obs_win(object):
             os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_total+' -v '+varname+' -c total -n 0.9 -q '+qcthre)
             if self.obv=='NO2':
                fout_tropo = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'_'+self.obv+'_tropo.nc'
-               os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_tropo+' -v '+varname+' -c tropo -n 0.9 -q '+qcthre)              
+               os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_tropo+' -v '+varname+' -c tropo -n 0.9 -q '+qcthre)
 
     def getnconv_mopitt(self):
         '''
@@ -260,6 +261,51 @@ class obs_win(object):
                                     +str(self.tmpdir)+'/*'+ymd_e+'* -r ' \
                                     +ymdh_s+' '+ymdh_e+' -o '+fout)
 
+    def getnconv_tempo(self):
+        '''
+        obs ingest function for TEMPO proxy data
+        on https:///asdc.larc.nasa.gov/
+        '''
+        ret_type = "PROXY_L2"
+        version = "V01"
+        product = ret_type+"_"+version
+
+        tokfile = Path(__file__).parent/'earthdata_token'
+        if not os.path.isfile(tokfile) or not self.cch:
+            tok = input("Enter token from https:///asdc.larc.nasa.gov/: ")
+            with open(tokfile, 'w') as f: f.write(tok)
+        else:
+            with open(tokfile, 'r') as f: tok = f.read()
+        f.close()
+
+        hdrp = ' --header "Authorization: Bearer ' +tok+'" '
+        url = 'https://asdc.larc.nasa.gov/data/TEMPO/'
+        cmd = 'wget -e robots=off -r -np -nd --reject "index.html*" -A  '
+        exe = Path(self.pbd)/'bin'/'tempo_nc2ioda.py '
+        for w_s,w_e in zip(self.lwin_s,self.lwin_e):
+            finish = False
+            if w_s == self.lwin_s[-1]: finish = True
+            self.check_clean(finish)
+            w_c = w_s
+            while w_c < w_e:
+                yr, mm, dd, hr = w_c.strftime('%Y'), w_c.strftime('%m'), w_c.strftime('%d'), \
+                    w_c.strftime('%H')
+                furl = ' '+url+self.obv+'-'+product+'/'+yr+'/'+mm+'/ '
+                fnam = ' "TEMPO_'+self.obv+'-'+product+'_'+yr+mm+dd+'T'+hr+'*" '
+                locf = ' -P '+str(self.tmpdir)
+                hdrp = ' --header "Authorization: Bearer '+tok+'" '
+
+                fcmd = cmd + fnam + hdrp + furl + locf
+                print(fcmd)
+                # os.system(fcmd)
+
+                w_c = w_c + Timedelta(hours=1)
+
+            w_m = w_s + self.win//2
+            ymdh = w_m.strftime("%Y%m%d%H")
+            fout = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh+'.nc'
+            #print(str(exe)+'-i '+str(self.tmpdir)+'/* -t '+ymdh+' -p '+self.pfm+' -o '+fout)
+            os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -t '+ymdh+' -p '+self.pfm+' -o '+fout)
 
 def main():
 
@@ -283,7 +329,7 @@ def main():
 
     pfm = ymlist["platform"]
     ins = ymlist["instrument"]
-    obv = ymlist["observable"] 
+    obv = ymlist["observable"]
 
     pio = ymlist["path ioda out"]
     pbd = ymlist["path build"]
@@ -293,7 +339,7 @@ def main():
 
     owclass = obs_win(sta, end, win, pfm, ins, obv, pio, pbd, cln, cch)
 
-    
+
 
 if __name__ == '__main__':
     main()
