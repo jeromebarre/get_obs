@@ -296,16 +296,14 @@ class obs_win(object):
                 hdrp = ' --header "Authorization: Bearer '+tok+'" '
 
                 fcmd = cmd + fnam + hdrp + furl + locf
-                print(fcmd)
-                # os.system(fcmd)
+                os.system(fcmd)
 
                 w_c = w_c + Timedelta(hours=1)
 
             w_m = w_s + self.win//2
             ymdh = w_m.strftime("%Y%m%d%H")
             fout = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh+'.nc'
-            #print(str(exe)+'-i '+str(self.tmpdir)+'/* -t '+ymdh+' -p '+self.pfm+' -o '+fout)
-            os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -t '+ymdh+' -p '+self.pfm+' -o '+fout)
+            os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -c troposphere -v '+self.obv+' -o '+fout)
 
 def main():
 

@@ -3,7 +3,7 @@ end date: 2013-08-01T21:00:00Z
 window length: PT6H
 platform: Intelsat40e
 instrument: TEMPO
-observable: NO2
+observable: no2
 path build: /Users/jeromebarre/ioda-bundle/build/
 path ioda out: ioda_tempo_no2
 clean: False # if set to False this will clutter your diskspace
