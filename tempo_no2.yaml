@@ -1,0 +1,10 @@
+start date: 2023-11-01T21:00:00Z #it's window begin time, not window center
+end date: 2023-11-04T21:00:00Z
+window length: PT6H
+platform: Intelsat40e
+instrument: TEMPO
+observable: NO2
+path build: /discover/nobackup/jbarre/jedidev/jedi-bundle/build
+path ioda out: ioda_tempo_no2
+clean: True # if set to False this will clutter your diskspace
+cache: True
