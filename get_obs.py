@@ -266,23 +266,15 @@ class obs_win(object):
         obs ingest function for TEMPO proxy data
         on https:///asdc.larc.nasa.gov/
         '''
-        ret_type = "PROXY_L2"
+        ret_type = "L2"
         version = "V01"
         product = ret_type+"_"+version
         OBV = self.obv
         obv = self.obv.lower()
 
-        tokfile = Path(__file__).parent/'earthdata_token'
-        if not os.path.isfile(tokfile) or not self.cch:
-            tok = input("Enter token from https:///asdc.larc.nasa.gov/: ")
-            with open(tokfile, 'w') as f: f.write(tok)
-        else:
-            with open(tokfile, 'r') as f: tok = f.read()
-        f.close()
-
-        hdrp = ' --header "Authorization: Bearer ' +tok+'" '
-        url = 'https://asdc.larc.nasa.gov/data/TEMPO/'
-        cmd = 'wget -e robots=off -r -np -nd --reject "index.html*" -A  '
+        hdrp = ' '
+        url = ' /discover/nobackup/projects/gmao/geos_cf_dev/obs/TEMPO'
+        cmd = 'cp -rf '
         exe = Path(self.pbd)/'bin'/'tempo_nc2ioda.py '
         for w_s,w_e in zip(self.lwin_s,self.lwin_e):
             finish = False
@@ -293,18 +285,17 @@ class obs_win(object):
             while w_c < w_e:
                 yr, mm, dd, hr = w_c.strftime('%Y'), w_c.strftime('%m'), w_c.strftime('%d'), \
                     w_c.strftime('%H')
-                furl = ' '+url+OBV+'-'+product+'/'+yr+'/'+mm+'/ '
-                fnam = ' "TEMPO_'+self.obv+'-'+product+'_'+yr+mm+dd+'T'+hr+'*" '
-                locf = ' -P '+str(self.tmpdir)
-                hdrp = ' --header "Authorization: Bearer '+tok+'" '
+                furl = ' '+url+'_'+product
+                fnam = '/TEMPO_'+self.obv+'_'+product+'_'+yr+mm+dd+'T'+hr+'* '
+                locf = ' '+str(self.tmpdir)
 
-                fcmd = cmd + fnam + hdrp + furl + locf
+                fcmd = cmd + furl + fnam + hdrp + locf
                 os.system(fcmd)
-
+                os.system('ls '+locf)
                 w_c = w_c + Timedelta(hours=1)
 
             w_m = w_s + self.win//2
-            ymdh = w_m.strftime("2021%m%d%H")
+            ymdh = w_m.strftime("%Y%m%d%H")
             fout = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh+'.nc'
             os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -c troposphere -v '+obv+' -o '+fout)
 
