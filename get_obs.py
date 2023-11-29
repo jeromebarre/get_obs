@@ -17,6 +17,8 @@ import os
 import shutil
 from pathlib import Path
 import yaml as ym
+import json
+import requests
 
 class obs_win(object):
     def __init__(self, sta, end, win, pfm, ins, obv, pio, pbd, cln, cch):
@@ -156,22 +158,22 @@ class obs_win(object):
     def getnconv_tropomi(self):
         import xml.etree.ElementTree as ET
         '''
-        obs ingest function for TROPOMI products using the s5phub API
-        on https://s5phub.copernicus.eu/
+        obs ingest function for TROPOMI products using the copernicus API
+        on https://dataspace.copernicus.eu/
         '''
 
         exe = Path(self.pbd)/'bin'/'tropomi_no2_co_nc2ioda.py '
 
         xmlist='list_tropomi.xml'
         if os.path.exists(xmlist): os.remove(xmlist)
-        #pass and id are being the same since 2018 and is kind of public, not sure this will change soon
-        wgc = 'wget --user=s5pguest --password=s5pguest --no-check-certificate '
-        apisearch='https://s5phub.copernicus.eu/dhus/search?q='
-        dlurl='https://s5phub.copernicus.eu/dhus/odata/v1/Products'
+
+        apisearch = 'wget -O - "http://catalogue.dataspace.copernicus.eu/resto/api/collections/Sentinel5P/search.json?'
+        dlurl = '\'http://catalogue.dataspace.copernicus.eu/odata/v1/Products'
+
         #other products could be added in the future
         if self.obv=='NO2':
             prod='L2__NO2___'; varname='no2'; qcthre='0.99'
-            api_conf = 'producttype:'+prod
+            api_conf = '&productType='+prod
         if self.obv=='CO':
             mode = 'Reprocessing'
             prod='L2__CO____'
@@ -180,35 +182,48 @@ class obs_win(object):
             api_conf = 'producttype:'+prod+' AND processingmode:'+mode
 
         for w_s,w_e in zip(self.lwin_s,self.lwin_e):
+
+            #save credentials and get access token
+            #weirdly the token has a very short lifetime
+            #so it has to be in the loop
+            credfile = Path(__file__).parent/'coper_creds'
+            if not os.path.isfile(credfile) or not self.cch:
+                usr = input("Username from https://dataspace.copernicus.eu/: ")
+                pswd = input("Password: ")
+                with open(credfile, 'w') as f: f.write(usr+'\n'); f.write(pswd)
+            else:
+                with open(credfile, 'r') as f: cred = f.read().split('\n')
+                usr, pswd = cred[0], cred[1]
+            f.close()
+            os.system("curl -d 'client_id=cdse-public' -d 'username="+usr+"' -d 'password="+pswd+"' -d 'grant_type=password' 'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token' | python3 -m json.tool | grep \"access_token\" | awk -F\\\" '{print $4}' > coper_token")
+            tokfile = Path(__file__).parent/'coper_token'
+            with open(tokfile, 'r') as f: tok = f.read()
+            f.close()
+            wgc = 'curl --http1.1 -H "Authorization: Bearer '+tok+'"'
+
             finish = False
             if w_s == self.lwin_s[-1]: finish = True
             self.check_clean(finish)
 
             w_ss = w_s + Timedelta(hours=-1)
-            ymdh_s = w_ss.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
-            ymdh_e = w_e.strftime('%Y-%m-%dT%H') + ':00:00.000Z'
-            apis = apisearch+api_conf+' AND beginposition:['+ymdh_s+' TO '+ymdh_e+']'
-
-            os.system(wgc+'--output-document='+xmlist+' "'+apis+'"')
-
-            #get the uuids from the xml
-            tree = ET.parse(xmlist)
-            root = tree.getroot()
-            for child1 in root:
-                for child2 in child1:
-                    if 'name' in child2.attrib and child2.attrib['name'] == 'uuid':
-                       uuid = child2.text
-                       durl=dlurl+"('"+uuid+"')/\$value"
-                       durl='"'+durl+'"'
-                       os.system('cd '+str(self.tmpdir)+';'+wgc+' --content-disposition '+durl+';cd ..')
+            ymdh_s = w_ss.strftime('%Y-%m-%dT%H') + ':00:00Z'
+            ymdh_e = w_e.strftime('%Y-%m-%dT%H') + ':00:00Z'
+            apis = apisearch+api_conf+'&startDate='+ymdh_s+'&completionDate='+ymdh_e+'"'
+            os.system(apis+' > '+xmlist)
+            list_dico = json.loads(open(xmlist).read()).get('features')
+           
+            for dico in list_dico:
+                uuid = dico.get('id')
+                durl=dlurl+'('+uuid+')/$value\' --location-trusted --output product.zip'
+                os.system('cd '+str(self.tmpdir)+';'+wgc+' '+durl+';unzip product.zip; cd ..')
 
             w_m = w_s + self.win//2
             ymdh_m = w_m.strftime('%Y%m%dT%H')
             fout_total = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'_'+self.obv+'_total.nc'
-            os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_total+' -v '+varname+' -c total -n 0.9 -q '+qcthre)
+            os.system(str(exe)+'-i '+str(self.tmpdir)+'/*/*.nc -o '+fout_total+' -v '+varname+' -c total -n 0.9 -q '+qcthre)
             if self.obv=='NO2':
                fout_tropo = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'_'+self.obv+'_tropo.nc'
-               os.system(str(exe)+'-i '+str(self.tmpdir)+'/* -o '+fout_tropo+' -v '+varname+' -c tropo -n 0.9 -q '+qcthre)
+               os.system(str(exe)+'-i '+str(self.tmpdir)+'/*/*.nc -o '+fout_tropo+' -v '+varname+' -c tropo -n 0.9 -q '+qcthre)
 
     def getnconv_mopitt(self):
         '''
