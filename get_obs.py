@@ -208,7 +208,7 @@ class obs_win(object):
             w_ss = w_s + Timedelta(hours=-1)
             ymdh_s = w_ss.strftime('%Y-%m-%dT%H') + ':00:00Z'
             ymdh_e = w_e.strftime('%Y-%m-%dT%H') + ':00:00Z'
-            apis = apisearch+api_conf+'&startDate='+ymdh_s+'&completionDate='+ymdh_e+'"'
+            apis = apisearch+api_conf+'&startDate='+ymdh_s+'&completionDate='+ymdh_e+'&maxRecords=500"'
             os.system(apis+' > '+xmlist)
             list_dico = json.loads(open(xmlist).read()).get('features')
            
@@ -220,10 +220,10 @@ class obs_win(object):
             w_m = w_s + self.win//2
             ymdh_m = w_m.strftime('%Y%m%dT%H')
             fout_total = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'_'+self.obv+'_total.nc'
-            os.system(str(exe)+'-i '+str(self.tmpdir)+'/*/*.nc -o '+fout_total+' -v '+varname+' -c total -n 0.9 -q '+qcthre)
+            #os.system(str(exe)+'-i '+str(self.tmpdir)+'/*/*.nc -o '+fout_total+' -v '+varname+' -c total -n 0.0 -q '+qcthre)
             if self.obv=='NO2':
                fout_tropo = self.pio+'/'+self.ins+'_'+self.pfm+'_'+ymdh_m+'_'+self.obv+'_tropo.nc'
-               os.system(str(exe)+'-i '+str(self.tmpdir)+'/*/*.nc -o '+fout_tropo+' -v '+varname+' -c tropo -n 0.9 -q '+qcthre)
+               os.system(str(exe)+'-i '+str(self.tmpdir)+'/*/*.nc -o '+fout_tropo+' -v '+varname+' -c tropo -n 0.0 -q '+qcthre)
 
     def getnconv_mopitt(self):
         '''
